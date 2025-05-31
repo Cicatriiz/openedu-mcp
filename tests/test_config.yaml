@@ -1,0 +1,133 @@
+# Real-World Validation Test Configuration
+# This file contains configuration for comprehensive API validation tests
+
+validation:
+  # Test execution settings
+  execution:
+    rate_limit_delay: 0.5  # Seconds between tests
+    timeout_per_test: 60   # Maximum seconds per test
+    retry_attempts: 2      # Number of retries for failed tests
+    
+  # Test data and queries
+  test_queries:
+    arxiv:
+      - "machine learning education"
+      - "mathematics pedagogy" 
+      - "computer science curriculum"
+      - "educational technology"
+      - "STEM education research"
+    
+    wikipedia:
+      - "Mathematics"
+      - "Educational technology"
+      - "Pedagogy"
+      - "Curriculum"
+      - "Learning theory"
+    
+    dictionary:
+      - "education"
+      - "pedagogy"
+      - "curriculum"
+      - "assessment"
+      - "methodology"
+    
+    openlibrary:
+      - "mathematics textbook"
+      - "science education"
+      - "teaching methods"
+      - "educational psychology"
+      - "classroom management"
+
+  # Expected thresholds for validation
+  thresholds:
+    min_search_results: 1
+    min_educational_relevance_score: 0.3
+    max_response_time_seconds: 30
+    min_success_rate_percent: 80
+    
+  # Educational feature validation
+  educational_features:
+    grade_levels:
+      - "K-2"
+      - "3-5" 
+      - "6-8"
+      - "9-12"
+      - "College"
+    
+    subjects:
+      - "Mathematics"
+      - "Science"
+      - "English Language Arts"
+      - "Social Studies"
+      - "Arts"
+      - "Physical Education"
+      - "Technology"
+    
+    academic_levels:
+      - "Elementary"
+      - "Middle School"
+      - "High School"
+      - "Undergraduate"
+      - "Graduate"
+
+# API-specific test configurations
+apis:
+  arxiv:
+    max_results_per_test: 5
+    test_categories:
+      - "cs"  # Computer Science
+      - "math"  # Mathematics
+      - "physics"  # Physics
+    recent_papers_days: 7
+    
+  wikipedia:
+    max_results_per_test: 5
+    test_languages:
+      - "en"  # English
+    test_article_types:
+      - "standard"
+      - "featured"
+      - "summary"
+      
+  dictionary:
+    test_word_types:
+      - "common"
+      - "academic"
+      - "technical"
+    phonetics_required: true
+    examples_required: true
+    
+  openlibrary:
+    max_results_per_test: 5
+    test_isbn_samples:
+      - "9780134685991"  # Computer Science textbook
+      - "9780321573513"  # Mathematics textbook
+    test_subjects:
+      - "mathematics"
+      - "science"
+      - "education"
+
+# Performance testing configuration
+performance:
+  concurrent_requests: 4
+  load_test_duration_seconds: 30
+  expected_max_response_time: 10
+  expected_min_success_rate: 0.95
+
+# Reporting configuration
+reporting:
+  include_detailed_errors: true
+  include_performance_metrics: true
+  include_educational_analysis: true
+  save_test_artifacts: true
+  
+  output_formats:
+    - "json"
+    - "summary"
+  
+  metrics_to_track:
+    - "response_times"
+    - "success_rates"
+    - "educational_relevance_scores"
+    - "api_health_status"
+    - "feature_coverage"

@@ -1,0 +1,84 @@
+# OpenEdu MCP Server - Default Configuration
+
+server:
+  name: "openedu-mcp-server"
+  version: "1.0.0"
+  host: "localhost"
+  port: 8000
+  log_level: "INFO"
+  debug: false
+
+cache:
+  database_path: "~/.openedu-mcp/cache.db"
+  default_ttl: 3600  # 1 hour in seconds
+  max_size_mb: 100
+  cleanup_interval: 3600  # 1 hour
+  enable_compression: true
+
+apis:
+  open_library:
+    base_url: "https://openlibrary.org"
+    rate_limit: 100  # requests per minute
+    timeout: 30
+    retry_attempts: 3
+    backoff_factor: 2.0
+    
+  wikipedia:
+    base_url: "https://en.wikipedia.org/api/rest_v1"
+    rate_limit: 200  # requests per minute
+    timeout: 30
+    retry_attempts: 2
+    backoff_factor: 2.0
+    
+  dictionary:
+    base_url: "https://api.dictionaryapi.dev/api/v2"
+    rate_limit: 450  # requests per hour
+    timeout: 15
+    retry_attempts: 3
+    backoff_factor: 2.0
+    
+  arxiv:
+    base_url: "http://export.arxiv.org/api"
+    rate_limit: 3  # requests per second
+    timeout: 60
+    retry_attempts: 2
+    backoff_factor: 2.0
+
+education:
+  grade_levels:
+    - "K-2"
+    - "3-5" 
+    - "6-8"
+    - "9-12"
+    - "College"
+    
+  curriculum_standards:
+    - "Common Core"
+    - "NGSS"
+    - "State Standards"
+    
+  subjects:
+    - "Mathematics"
+    - "Science"
+    - "English Language Arts"
+    - "Social Studies"
+    - "Arts"
+    - "Physical Education"
+    - "Technology"
+    
+  content_filters:
+    enable_age_appropriate: true
+    enable_curriculum_alignment: true
+    min_educational_relevance: 0.7
+
+logging:
+  level: "INFO"
+  format: "json"
+  file_path: "~/.openedu-mcp/logs/server.log"
+  max_file_size_mb: 10
+  backup_count: 5
+  
+monitoring:
+  enable_metrics: true
+  metrics_port: 9090
+  health_check_interval: 60
