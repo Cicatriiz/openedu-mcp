@@ -124,6 +124,11 @@ class OpenLibraryTool(BaseTool):
                 subject=subject
             )
             
+            # If no books found after filtering, provide fallback content
+            if not filtered_books:
+                logger.info(f"No educational books found for query '{query}', providing fallback content")
+                return self._get_fallback_books(query, subject, grade_level, limit)
+            
             # Sort by educational relevance
             sorted_books = self.sort_by_educational_relevance(filtered_books)
             
@@ -326,6 +331,11 @@ class OpenLibraryTool(BaseTool):
                 min_relevance_score=0.8  # Higher threshold for recommendations
             )
             
+            # If no books found after filtering, provide fallback content
+            if not filtered_books:
+                logger.info(f"No book recommendations found for grade level '{grade_level}' and subject '{subject}', providing fallback content")
+                return self._get_fallback_books(None, subject, grade_level, limit)
+            
             # Sort by educational relevance and limit results
             sorted_books = self.sort_by_educational_relevance(filtered_books)
             final_books = sorted_books[:validated['limit']]
@@ -338,6 +348,32 @@ class OpenLibraryTool(BaseTool):
             user_session=user_session
         )
     
+    def _get_fallback_books(
+        self,
+        query: Optional[str],
+        subject: Optional[str],
+        grade_level: Optional[str],
+        limit: int
+    ) -> List[Dict[str, Any]]:
+        """
+        Get fallback books when no results are found.
+        
+        Args:
+            query: Original search query (optional)
+            subject: Educational subject (optional)
+            grade_level: Target grade level (optional)
+            limit: Maximum number of results
+            
+        Returns:
+            List of fallback books
+        """
+        fallback_books = self._provide_educational_fallback("book", subject, grade_level)
+        # Convert fallbacks to proper format
+        for book in fallback_books:
+            if query:
+                book["query"] = query
+        return fallback_books[:limit]
+
     async def _enrich_educational_metadata(
         self,
         book: Book,

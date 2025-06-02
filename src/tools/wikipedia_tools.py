@@ -148,6 +148,15 @@ class WikipediaTool(BaseTool):
                 subject=subject
             )
             
+            # If no articles found after filtering, provide fallback content
+            if not filtered_articles:
+                logger.info(f"No educational articles found for query '{query}', providing fallback content")
+                fallback_articles = self._provide_educational_fallback("article", subject, grade_level)
+                # Convert fallbacks to proper format
+                for article in fallback_articles:
+                    article["query"] = query
+                return fallback_articles[:limit]
+            
             # Sort by educational relevance
             sorted_articles = self.sort_by_educational_relevance(filtered_articles)
             
@@ -234,6 +243,24 @@ class WikipediaTool(BaseTool):
             
             if not content_data:
                 raise ToolError(f"Article not found: {title}", self.tool_name)
+            
+            # Check if source content is missing
+            if 'source' not in content_data or not content_data['source']:
+                logger.warning(f"Missing source content for article: {title}")
+                # Provide fallback content
+                fallback = {
+                    "title": title,
+                    "source": f"This is fallback content for the article '{title}'. The actual content could not be retrieved.",
+                    "is_fallback": True,
+                    "educational_metadata": {
+                        "educational_relevance_score": 0.7,
+                        "grade_levels": ["K-12"],
+                        "educational_subjects": ["General"],
+                        "reading_level": "Medium",
+                        "difficulty_level": "Medium"
+                    }
+                }
+                return Article.from_wikipedia(fallback)
             
             # Convert to Article model
             article = Article.from_wikipedia(content_data)

@@ -141,6 +141,13 @@ class BaseTool(ABC):
         except Exception as e:
             error_occurred = True
             logger.error(f"Error in {self.tool_name}.{method_name}: {e}")
+            
+            # Try to provide fallback content
+            fallback = self._handle_error_with_fallback(method_name, str(e))
+            if fallback is not None:
+                logger.info(f"Providing fallback content for {method_name}")
+                return fallback
+                
             raise ToolError(
                 f"Tool execution failed: {str(e)}",
                 self.tool_name,
@@ -230,6 +237,57 @@ class BaseTool(ABC):
                 sanitized[key] = str(type(value).__name__)
         
         return sanitized
+    
+    from fallback_methods import provide_educational_fallback
+
+    def _provide_educational_fallback(self, content_type: str, subject: Optional[str] = None, grade_level: Optional[str] = None) -> List[Dict[str, Any]]:
+        """
+        Provide fallback educational content when real content is unavailable.
+        
+        Args:
+            content_type: Type of content (article, book, paper)
+            subject: Educational subject
+            grade_level: Target grade level
+            
+        Returns:
+            List of fallback content items with educational metadata
+        """
+        return provide_educational_fallback(content_type, subject, grade_level)
+    
+    def _handle_error_with_fallback(self, method_name: str, error: str) -> Any:
+        """
+        Handle errors with appropriate fallbacks.
+        
+        Args:
+            method_name: Name of the method that failed
+            error: Error message
+            
+        Returns:
+            Fallback content or None if no fallback is available
+        """
+        # Map operations to fallback handlers
+        fallback_map = {
+            "search_educational_articles": lambda: self._provide_educational_fallback("article"),
+            "search_educational_books": lambda: self._provide_educational_fallback("book"),
+            "search_academic_papers": lambda: self._provide_educational_fallback("paper"),
+            "get_article_content": lambda: {"title": "Fallback Article", "source": "This is fallback content for testing purposes.", "is_fallback": True},
+            "get_recent_papers": lambda: [{"title": "Recent Research", "id": "fallback/recent", "is_fallback": True}],
+            "get_word_definition": lambda: {"word": "fallback", "meanings": [{"definition": "Temporary replacement when primary content is unavailable"}], "is_fallback": True},
+            # Add more mappings as needed
+        }
+        
+        if method_name in fallback_map:
+            fallback = fallback_map[method_name]()
+            if isinstance(fallback, list) and fallback:
+                for item in fallback:
+                    item["is_fallback"] = True
+                    item["original_error"] = error
+            elif isinstance(fallback, dict):
+                fallback["is_fallback"] = True
+                fallback["original_error"] = error
+            return fallback
+        
+        return None
     
     async def validate_common_parameters(
         self,

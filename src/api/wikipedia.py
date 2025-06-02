@@ -336,12 +336,14 @@ class WikipediaClient:
                 'action': 'query',
                 'format': 'json',
                 'titles': title,
-                'prop': 'extracts|info|categories|links|images',
+                'prop': 'extracts|info|categories|links|images|revisions',
                 'explaintext': '1',
                 'exsectionformat': 'plain',
                 'inprop': 'url',
                 'pllimit': 50,  # Limit links
                 'imlimit': 10,  # Limit images
+                'rvprop': 'content',  # Get wikitext content
+                'rvslots': 'main',
                 'utf8': 1
             }
             
@@ -369,9 +371,24 @@ class WikipediaClient:
             if 'categories' in page_data:
                 categories = [cat['title'].replace('Category:', '') for cat in page_data['categories']]
             
+            # Get source content (wikitext)
+            source_content = ""
+            if 'revisions' in page_data and page_data['revisions']:
+                revision = page_data['revisions'][0]
+                if 'slots' in revision and 'main' in revision['slots']:
+                    source_content = revision['slots']['main'].get('*', '')
+                elif '*' in revision:
+                    source_content = revision.get('*', '')
+            
+            # If no source content, use extract as fallback
+            if not source_content:
+                source_content = page_data.get('extract', '')
+                logger.warning(f"No wikitext source found for {title}, using extract as fallback")
+            
             return {
                 'title': page_data.get('title', title),
                 'extract': page_data.get('extract', ''),
+                'source': source_content,  # Always include source field
                 'pageid': page_data.get('pageid'),
                 'fullurl': page_data.get('fullurl', ''),
                 'categories': categories,

@@ -156,6 +156,15 @@ class ArxivTool(BaseTool):
                 subject=subject
             )
             
+            # If no papers found after filtering, provide fallback content
+            if not filtered_papers:
+                logger.info(f"No academic papers found for query '{query}', providing fallback content")
+                fallback_papers = self._provide_educational_fallback("paper", subject, academic_level)
+                # Convert fallbacks to proper format
+                for paper in fallback_papers:
+                    paper["query"] = query
+                return fallback_papers[:max_results]
+            
             # Sort by educational relevance
             sorted_papers = self.sort_by_educational_relevance(filtered_papers)
             

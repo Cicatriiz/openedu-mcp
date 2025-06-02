@@ -226,3 +226,24 @@ class Definition(BaseModel):
             return complexity <= 0.7
         else:  # 9-12, College
             return True  # All words suitable for higher grades
+            
+    def get_complexity_level(self) -> str:
+        """
+        Get the complexity level of the definition.
+        
+        Returns:
+            str: The complexity level (e.g., "Elementary", "Intermediate", "Advanced")
+        """
+        # First check if difficulty_level is already set in educational_metadata
+        if hasattr(self.educational_metadata, 'difficulty_level') and self.educational_metadata.difficulty_level:
+            return self.educational_metadata.difficulty_level
+        
+        # If not set, calculate based on complexity score
+        complexity_score = self.get_complexity_score()
+        
+        if complexity_score <= 0.3:
+            return "Elementary"
+        elif complexity_score <= 0.7:
+            return "Intermediate"
+        else:
+            return "Advanced"

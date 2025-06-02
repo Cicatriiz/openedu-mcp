@@ -95,8 +95,16 @@ class Book(BaseModel):
         )
     
     @classmethod
-    def from_open_library(cls, ol_data: Dict[str, Any]) -> 'Book':
+    def from_openlibrary(cls, ol_data: Dict[str, Any]) -> 'Book':
         """Create Book from Open Library API response."""
+        return cls.from_open_library(ol_data)
+        
+    @classmethod
+    def from_open_library(cls, ol_data: Dict[str, Any]) -> 'Book':
+        """Create Book from Open Library API response.
+
+        This method is called by `from_openlibrary` as an implementation detail.
+        """
         # Extract basic information
         work_id = ol_data.get("key", "").replace("/works/", "")
         title = ol_data.get("title", "")
@@ -194,3 +202,46 @@ class Book(BaseModel):
             score += 0.1
         
         return min(score, 1.0)  # Cap at 1.0
+        
+    def get_reading_level(self) -> str:
+        """
+        Get the reading level of the book.
+        
+        Returns:
+            str: The reading level (e.g., "Elementary", "Middle School", "High School", "College")
+        """
+        # First check if reading_level is already set in educational_metadata
+        if hasattr(self.educational_metadata, 'reading_level') and self.educational_metadata.reading_level:
+            return self.educational_metadata.reading_level
+        
+        # If not set, infer from grade levels
+        if not self.educational_metadata.grade_levels:
+            # Infer from title and subjects if no grade levels are set
+            title_desc = f"{self.title} {self.description or ''}".lower()
+            
+            if any(term in title_desc for term in ["elementary", "primary", "kindergarten", "children"]):
+                return "Elementary"
+            elif any(term in title_desc for term in ["middle school", "junior high"]):
+                return "Middle School"
+            elif any(term in title_desc for term in ["high school", "secondary"]):
+                return "High School"
+            elif any(term in title_desc for term in ["college", "university", "undergraduate", "graduate"]):
+                return "College"
+            else:
+                # Default based on complexity
+                return "High School"  # Most common default for books
+        
+        # Determine reading level from grade levels
+        grade_levels = [gl.value for gl in self.educational_metadata.grade_levels]
+        
+        if any('K-2' in gl or '3-5' in gl for gl in grade_levels):
+            return "Elementary"
+        elif any('6-8' in gl for gl in grade_levels):
+            return "Middle School"
+        elif any('9-12' in gl for gl in grade_levels):
+            return "High School"
+        elif any('College' in gl for gl in grade_levels):
+            return "College"
+        
+        # Default if no specific grade level matches
+        return "High School"
