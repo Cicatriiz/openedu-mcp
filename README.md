@@ -33,8 +33,8 @@ A comprehensive Model Context Protocol (MCP) server designed to provide educatio
 
 1. **Clone the repository:**
 ```bash
-git clone https://github.com/google/openedu-mcp-server.git
-cd opened-mcp
+git clone https://github.com/Cicatriiz/openedu-mcp.git
+cd openedu-mcp
 ```
 
 2. **Install dependencies:**
