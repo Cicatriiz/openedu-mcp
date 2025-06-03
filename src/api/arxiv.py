@@ -89,17 +89,18 @@ class ArxivClient:
         retry_count: int = 0
     ) -> str:
         """
-        Make HTTP request with retry logic and error handling.
+        Performs an HTTP GET request to the arXiv API with retry logic and error handling.
+        
+        Retries the request on network errors or rate limiting, using exponential backoff. Raises an APIError if the request fails after all retry attempts or encounters an unexpected error.
         
         Args:
-            params: Query parameters
-            retry_count: Current retry attempt
-            
+            params: Query parameters for the arXiv API request.
+        
         Returns:
-            XML response text
-            
+            The XML response text from the arXiv API.
+        
         Raises:
-            APIError: If request fails after all retries
+            APIError: If the request fails after all retries or encounters an unexpected error.
         """
         session = await self._get_session()
         
@@ -397,19 +398,19 @@ class ArxivClient:
         max_results: int = 10
     ) -> List[Dict[str, Any]]:
         """
-        Get recent papers by category.
+        Retrieves recent arXiv papers in a specified category from the past given number of days.
         
         Args:
-            category: arXiv category or educational subject
-            days: Number of days back to search
-            max_results: Maximum number of results
-            
+            category: The arXiv category code or educational subject to filter papers.
+            days: Number of days back from today to include papers (1 to 365).
+            max_results: Maximum number of papers to return.
+        
         Returns:
-            List of recent papers
-            
+            A list of dictionaries containing metadata for recent papers matching the criteria.
+        
         Raises:
-            ValidationError: If parameters are invalid
-            APIError: If API request fails
+            ValidationError: If the days parameter is out of range or the category is invalid.
+            APIError: If the arXiv API request fails or the response cannot be processed.
         """
         if days < 1 or days > 365:
             raise ValidationError("days must be between 1 and 365")
