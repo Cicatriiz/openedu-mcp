@@ -70,8 +70,8 @@ RUN mkdir -p /app/data/cache /app/data/logs
 
 # Set environment variables
 ENV PYTHONPATH=/app
-ENV OPENED_MCP_CACHE_PATH=/app/data/cache/cache.db
-ENV OPENED_MCP_LOG_PATH=/app/data/logs/server.log
+ENV OPENEDU_MCP_CACHE_PATH=/app/data/cache/cache.db
+ENV OPENEDU_MCP_LOG_PATH=/app/data/logs/server.log
 
 # Expose port
 EXPOSE 8000
@@ -97,9 +97,9 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - OPENED_MCP_LOG_LEVEL=INFO
-      - OPENED_MCP_CACHE_TTL=3600
-      - OPENED_MCP_RATE_LIMIT_WIKIPEDIA=200
+      - OPENEDU_MCP_LOG_LEVEL=INFO
+      - OPENEDU_MCP_CACHE_TTL=3600
+      - OPENEDU_MCP_RATE_LIMIT_WIKIPEDIA=200
     volumes:
       - ./data:/app/data
       - ./config:/app/config
@@ -194,7 +194,7 @@ docker push <account-id>.dkr.ecr.us-west-2.amazonaws.com/openedu-mcp-server:late
             ],
             "environment": [
                 {
-                    "name": "OPENED_MCP_LOG_LEVEL",
+                    "name": "OPENEDU_MCP_LOG_LEVEL",
                     "value": "INFO"
                 }
             ],
@@ -236,8 +236,8 @@ provider:
   timeout: 30
   memorySize: 1024
   environment:
-    OPENED_MCP_CACHE_PATH: /tmp/cache.db
-    OPENED_MCP_LOG_LEVEL: INFO
+    OPENEDU_MCP_CACHE_PATH: /tmp/cache.db
+    OPENEDU_MCP_LOG_LEVEL: INFO
 
 functions:
   server:
@@ -283,7 +283,7 @@ gcloud run deploy openedu-mcp-server \
     --memory 1Gi \
     --cpu 1 \
     --max-instances 10 \
-    --set-env-vars OPENED_MCP_LOG_LEVEL=INFO
+    --set-env-vars OPENEDU_MCP_LOG_LEVEL=INFO
 ```
 
 #### Using Google Kubernetes Engine (GKE)
@@ -310,7 +310,7 @@ spec:
         ports:
         - containerPort: 8000
         env:
-        - name: OPENED_MCP_LOG_LEVEL
+        - name: OPENEDU_MCP_LOG_LEVEL
           value: "INFO"
         resources:
           requests:
@@ -349,7 +349,7 @@ az container create \
     --cpu 1 \
     --memory 1 \
     --ports 8000 \
-    --environment-variables OPENED_MCP_LOG_LEVEL=INFO \
+    --environment-variables OPENEDU_MCP_LOG_LEVEL=INFO \
     --restart-policy Always
 ```
 
@@ -361,24 +361,24 @@ The server supports configuration through environment variables:
 
 ```bash
 # Server configuration
-export OPENED_MCP_SERVER_HOST=0.0.0.0
-export OPENED_MCP_SERVER_PORT=8000
-export OPENED_MCP_LOG_LEVEL=INFO
+export OPENEDU_MCP_SERVER_HOST=0.0.0.0
+export OPENEDU_MCP_SERVER_PORT=8000
+export OPENEDU_MCP_LOG_LEVEL=INFO
 
 # Cache configuration
-export OPENED_MCP_CACHE_PATH=/app/data/cache.db
-export OPENED_MCP_CACHE_TTL=3600
-export OPENED_MCP_CACHE_MAX_SIZE_MB=100
+export OPENEDU_MCP_CACHE_PATH=/app/data/cache.db
+export OPENEDU_MCP_CACHE_TTL=3600
+export OPENEDU_MCP_CACHE_MAX_SIZE_MB=100
 
 # API rate limits
-export OPENED_MCP_RATE_LIMIT_WIKIPEDIA=200
-export OPENED_MCP_RATE_LIMIT_OPENLIBRARY=100
-export OPENED_MCP_RATE_LIMIT_DICTIONARY=450
-export OPENED_MCP_RATE_LIMIT_ARXIV=3
+export OPENEDU_MCP_RATE_LIMIT_WIKIPEDIA=200
+export OPENEDU_MCP_RATE_LIMIT_OPENLIBRARY=100
+export OPENEDU_MCP_RATE_LIMIT_DICTIONARY=450
+export OPENEDU_MCP_RATE_LIMIT_ARXIV=3
 
 # Educational settings
-export OPENED_MCP_MIN_EDUCATIONAL_RELEVANCE=0.7
-export OPENED_MCP_ENABLE_AGE_FILTERING=true
+export OPENEDU_MCP_MIN_EDUCATIONAL_RELEVANCE=0.7
+export OPENEDU_MCP_ENABLE_AGE_FILTERING=true
 ```
 
 ### Configuration Files
@@ -446,7 +446,7 @@ services:
     secrets:
       - api_keys
     environment:
-      - OPENED_MCP_API_KEYS_FILE=/run/secrets/api_keys
+      - OPENEDU_MCP_API_KEYS_FILE=/run/secrets/api_keys
 
 secrets:
   api_keys:
@@ -474,7 +474,7 @@ spec:
       containers:
       - name: openedu-mcp-server
         env:
-        - name: OPENED_MCP_API_KEYS
+        - name: OPENEDU_MCP_API_KEYS
           valueFrom:
             secretKeyRef:
               name: openedu-mcp-secrets
@@ -764,10 +764,10 @@ session = aiohttp.ClientSession(connector=connector)
 docker stats openedu-mcp-server
 
 # Optimize cache size
-export OPENED_MCP_CACHE_MAX_SIZE_MB=50
+export OPENEDU_MCP_CACHE_MAX_SIZE_MB=50
 
 # Enable cache cleanup
-export OPENED_MCP_CACHE_CLEANUP_INTERVAL=1800
+export OPENEDU_MCP_CACHE_CLEANUP_INTERVAL=1800
 ```
 
 #### Slow Response Times
@@ -787,7 +787,7 @@ curl -w "@curl-format.txt" -o /dev/null -s "http://localhost:8000/api/books?quer
 curl http://localhost:8000/status | jq '.rate_limits'
 
 # Adjust rate limits
-export OPENED_MCP_RATE_LIMIT_WIKIPEDIA=300
+export OPENEDU_MCP_RATE_LIMIT_WIKIPEDIA=300
 ```
 
 ### Debugging
