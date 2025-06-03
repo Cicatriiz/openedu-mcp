@@ -658,9 +658,9 @@ apis:
 ### Environment Variables
 Override configuration with environment variables:
 ```bash
-export OPENED_MCP_CACHE_TTL=7200
-export OPENED_MCP_LOG_LEVEL=DEBUG
-export OPENED_MCP_RATE_LIMIT_WIKIPEDIA=300
+export OPENEDU_MCP_CACHE_TTL=7200
+export OPENEDU_MCP_LOG_LEVEL=DEBUG
+export OPENEDU_MCP_RATE_LIMIT_WIKIPEDIA=300
 ```
 
 ## 🏗️ Architecture
