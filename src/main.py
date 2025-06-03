@@ -17,6 +17,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 import asyncio
 import json
 import logging
+import contextlib
 import sys
 from pathlib import Path
 from typing import Optional, List, Dict, Any
@@ -825,10 +826,7 @@ async def sse_event_generator(request: Request):
     Yields an initial connection message and periodic pings.
     """
     try:
-        yield {
-            "event": "connected",
-            "data": json.dumps({"message": "Successfully connected to SSE stream"})
-        }
+        yield f"event: connected\ndata: {json.dumps({'message': 'Successfully connected to SSE stream'})}\n\n"
 
         loop_count = 0
         while True:
@@ -838,10 +836,7 @@ async def sse_event_generator(request: Request):
                 break
 
             loop_count += 1
-            yield {
-                "event": "ping",
-                "data": json.dumps({"heartbeat": loop_count, "message": "ping"})
-            }
+            yield f"event: ping\ndata: {json.dumps({'heartbeat': loop_count, 'message': 'ping'})}\n\n"
             await asyncio.sleep(5)  # Send a ping every 5 seconds
 
     except asyncio.CancelledError:
@@ -852,10 +847,7 @@ async def sse_event_generator(request: Request):
         # Yield an error event if possible, or just log and exit
         # Try to yield error event - if connection is closed, this will fail silently
         with contextlib.suppress(ConnectionError, RuntimeError):
-            yield {
-                "event": "error",
-                "data": json.dumps({"error": str(e)})
-            }
+            yield f"event: error\ndata: {json.dumps({'error': str(e)})}\n\n"
     finally:
         logger.info("SSE event generator finished.")
 
