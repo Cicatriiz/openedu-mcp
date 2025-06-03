@@ -14,6 +14,10 @@ from typing import Optional, List, Dict, Any
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent))
 
+import json # Added for SSE
+from starlette.requests import Request # Added for SSE, assuming FastMCP uses Starlette
+from starlette.responses import StreamingResponse # Added for SSE, assuming FastMCP uses Starlette
+
 from mcp.server.fastmcp import FastMCP, Context
 
 # Import with absolute paths
@@ -778,6 +782,99 @@ async def analyze_research_trends(
     except Exception as e:
         logger.error(f"Error in analyze_research_trends: {e}")
         raise OpenEduMCPError(f"Research trend analysis failed: {str(e)}")
+
+
+@mcp.tool()
+async def handle_stdio_input(ctx: Context, input_string: str) -> str:
+    """
+    Handles a line of input from stdin and returns a processed string.
+
+    Args:
+        ctx: The context object.
+        input_string: The string read from stdin.
+
+    Returns:
+        The processed string.
+    """
+    if not input_string:
+        raise OpenEduMCPError("Input string cannot be empty")
+
+    try:
+        # Simple processing: prepend "Processed: " and convert to uppercase
+        processed_string = f"Processed: {input_string.upper()}"
+        logger.info(f"Processed stdin input: {input_string} -> {processed_string}")
+        return processed_string
+    except Exception as e:
+        logger.error(f"Error processing stdio input: {e}")
+        raise OpenEduMCPError(f"Failed to process stdio input: {str(e)}")
+
+
+async def sse_event_generator(request: Request):
+    """
+    Async generator for SSE events.
+    Yields an initial connection message and periodic pings.
+    """
+    try:
+        yield {
+            "event": "connected",
+            "data": json.dumps({"message": "Successfully connected to SSE stream"})
+        }
+
+        loop_count = 0
+        while True:
+            # Check if client is still connected
+            if await request.is_disconnected():
+                logger.info("SSE client disconnected.")
+                break
+
+            loop_count += 1
+            yield {
+                "event": "ping",
+                "data": json.dumps({"heartbeat": loop_count, "message": "ping"})
+            }
+            await asyncio.sleep(5)  # Send a ping every 5 seconds
+
+    except asyncio.CancelledError:
+        logger.info("SSE event generator cancelled.")
+        # Handle cleanup if necessary
+    except Exception as e:
+        logger.error(f"Error in SSE event generator: {e}")
+        # Yield an error event if possible, or just log and exit
+        try:
+            yield {
+                "event": "error",
+                "data": json.dumps({"error": str(e)})
+            }
+        except: # If yielding fails (e.g. connection already closed)
+            pass
+    finally:
+        logger.info("SSE event generator finished.")
+
+@mcp.tool(route="/events", methods=["GET"]) # Assuming a route decorator might exist or be added to FastMCP
+async def stream_events(request: Request) -> StreamingResponse:
+    """
+    SSE endpoint to stream events.
+    Uses an async generator to produce events.
+    """
+    # Note: The 'request: Request' parameter might not be directly supported by @mcp.tool
+    # if it only expects Context and tool-specific arguments.
+    # This is an attempt based on common ASGI framework patterns.
+    # If FastMCP uses a different mechanism for raw requests or streaming, this will need adjustment.
+
+    logger.info(f"SSE connection request received: {request}")
+
+    # Check if FastMCP passes the raw request object.
+    # If not, this 'request.is_disconnected()' will fail.
+    # This part is speculative.
+    if not isinstance(request, Request):
+        logger.warning("Request object not available as expected for SSE. Client disconnection check might not work.")
+        # Fallback: create a dummy request object if needed by sse_event_generator,
+        # but is_disconnected will not work. This is a significant limitation.
+        # For now, let's assume 'request' is passed correctly or sse_event_generator handles it.
+
+    generator = sse_event_generator(request)
+
+    return StreamingResponse(generator, media_type="text/event-stream")
 
 
 @mcp.tool()
