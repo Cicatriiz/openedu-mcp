@@ -23,7 +23,7 @@ from config import Config
 from services.cache_service import CacheService
 from services.rate_limiting_service import RateLimitingService
 from services.usage_service import UsageService
-from exceptions import ToolError, ValidationError, APIError
+from exceptions import ToolError, ValidationError, APIError, CacheError
 
 
 class TestArxivClient:
@@ -659,11 +659,22 @@ class TestArxivTool:
         """Test health check failure."""
         # Mock client health check failure
         arxiv_tool.client.health_check = AsyncMock(side_effect=Exception("Connection failed"))
-        
+
         result = await arxiv_tool.health_check()
-        
+
         assert result['status'] == 'unhealthy'
         assert 'error' in result
+
+    @pytest.mark.asyncio
+    async def test_health_check_cache_failure(self, arxiv_tool):
+        """Health check marks tool unhealthy when cache fails."""
+        arxiv_tool.client.health_check = AsyncMock(return_value={'status': 'healthy'})
+        arxiv_tool.cache_service.health_check = AsyncMock(side_effect=CacheError("fail", "health_check"))
+
+        result = await arxiv_tool.health_check()
+
+        assert result['status'] == 'unhealthy'
+        assert result['cache_healthy'] is False
 
 
 class TestArxivIntegration:

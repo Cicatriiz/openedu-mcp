@@ -335,7 +335,24 @@ class CacheService:
                 
         except Exception as e:
             logger.error(f"Error cleaning up cache by size: {e}")
-    
+
+    async def health_check(self) -> bool:
+        """Verify that the cache database is reachable."""
+        if not self._initialized:
+            await self.initialize()
+
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                await db.execute("SELECT 1")
+            return True
+        except Exception as e:
+            logger.error(f"Cache service health check failed: {e}")
+            raise CacheError(
+                "Cache health check failed",
+                "health_check",
+                str(e),
+            )
+
     async def close(self) -> None:
         """Close the cache service."""
         # Note: aiosqlite connections are closed automatically
