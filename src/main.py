@@ -822,8 +822,10 @@ async def handle_stdio_input(ctx: Context, input_string: str) -> str:
 
 async def sse_event_generator(request: Request):
     """
-    Async generator for SSE events.
-    Yields an initial connection message and periodic pings.
+    Asynchronous generator that streams Server-Sent Events (SSE) to the client.
+    
+    Yields an initial "connected" event, followed by periodic "ping" events every 5 seconds.
+    If an error occurs, attempts to yield an "error" event before terminating.
     """
     try:
         yield f"event: connected\ndata: {json.dumps({'message': 'Successfully connected to SSE stream'})}\n\n"
