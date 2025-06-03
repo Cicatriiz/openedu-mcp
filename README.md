@@ -626,4 +626,4 @@ For questions, issues, or contributions:
 
 ---
 
-**Education MCP Server** - Empowering educators with intelligent educational resource discovery and curriculum planning tools.
+**OpenEdu MCP Server** - Empowering educators with intelligent educational resource discovery and curriculum planning tools.
