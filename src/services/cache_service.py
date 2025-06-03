@@ -346,12 +346,12 @@ class CacheService:
                 await db.execute("SELECT 1")
             return True
         except Exception as e:
-            logger.error(f"Cache service health check failed: {e}")
+            logger.error("Cache service health check failed: %s", e)
             raise CacheError(
                 "Cache health check failed",
                 "health_check",
                 str(e),
-            )
+            ) from e
 
     async def close(self) -> None:
         """Close the cache service."""
