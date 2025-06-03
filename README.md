@@ -85,7 +85,7 @@ isort src tests
 
 ## 🛠️ MCP Tools Reference
 
-The Education MCP Server provides **20+ MCP tools** across four API integrations:
+The Education MCP Server provides **21+ MCP tools** across four API integrations:
 
 ### 📚 Open Library Tools (4 tools)
 
@@ -289,6 +289,247 @@ Get comprehensive server status and performance metrics.
 ```python
 get_server_status()
 ```
+
+## 🔌 Connectivity Endpoints
+
+This section details how to interact with the OpenEdu MCP Server through various interfaces, including direct standard I/O, HTTP for tool execution, and Server-Sent Events for real-time updates.
+
+### Stdio Tool (`handle_stdio_input`)
+
+The server includes a tool designed for direct command-line or piped input.
+
+- **Tool Name**: `handle_stdio_input`
+- **Description**: Processes a single line of text input and returns a transformed version. This is useful for basic interaction or scripting with the MCP server if it's configured to listen to stdin.
+- **Signature**: `async def handle_stdio_input(ctx: Context, input_string: str) -> str`
+- **Example Interaction**:
+    ```
+    Tool: handle_stdio_input
+    Input: "your text here"
+    Output: "Processed: YOUR TEXT HERE"
+    ```
+
+### HTTP Endpoint for MCP Tools
+
+All registered MCP tools (including `handle_stdio_input` and the 20+ tools listed above) are accessible via HTTP. This allows integration with various applications and services. The server likely uses a JSON RPC style for these interactions.
+
+- **Endpoint**: `POST /mcp` (This is a common convention for FastMCP servers supporting JSON RPC)
+- **Request Method**: `POST`
+- **Headers**: `Content-Type: application/json`
+- **Request Body Structure (JSON RPC)**:
+    ```json
+    {
+        "jsonrpc": "2.0",
+        "method": "<tool_name>",
+        "params": {"param1": "value1", ...},
+        "id": "your_request_id"
+    }
+    ```
+
+- **Example `curl` call to `handle_stdio_input`**:
+    ```bash
+    curl -X POST -H "Content-Type: application/json" \
+         -d '{"jsonrpc": "2.0", "method": "handle_stdio_input", "params": {"input_string": "hello from http"}, "id": 1}' \
+         http://localhost:8000/mcp
+    ```
+
+- **Expected Response**:
+    ```json
+    {
+        "jsonrpc": "2.0",
+        "result": "Processed: HELLO FROM HTTP",
+        "id": 1
+    }
+    ```
+    If an error occurs, the `result` field will be replaced by an `error` object containing `code` and `message`.
+
+### Server-Sent Events (SSE) Endpoint
+
+The server provides an SSE endpoint for real-time notifications. This is useful for clients that need to stay updated with server-initiated events.
+
+- **Endpoint**: `GET /events`
+- **Description**: Streams events from the server to the client.
+- **Event Format**: Each event is sent as a block of text:
+    ```
+    event: <event_type>
+    data: <json_payload_of_the_event_data>
+    id: <optional_event_id>
+
+    ```
+    (Note: An empty line separates events.)
+
+- **Known Events**:
+    - **`connected`**: Sent once when the client successfully connects to the SSE stream.
+        - `data`: `{"message": "Successfully connected to SSE stream"}`
+    - **`ping`**: Sent periodically as a heartbeat to keep the connection alive and indicate server health.
+        - `data`: `{"heartbeat": <loop_count>, "message": "ping"}` (loop_count increments)
+    - **`error`**: Sent if an error occurs within the SSE generation stream.
+        - `data`: `{"error": "<error_message>"}`
+
+
+- **Example: Connecting with JavaScript's `EventSource`**:
+    ```javascript
+    const evtSource = new EventSource("http://localhost:8000/events");
+
+    evtSource.onopen = function() {
+        console.log("Connection to SSE opened.");
+    };
+
+    evtSource.onmessage = function(event) {
+        // Generic message handler if no specific event type is matched
+        console.log("Generic message:", event.data);
+        try {
+            const parsedData = JSON.parse(event.data);
+            console.log("Parsed generic data:", parsedData);
+        } catch (e) {
+            // Data might not be JSON
+        }
+    };
+
+    evtSource.addEventListener("connected", function(event) {
+        console.log("Event: connected");
+        console.log("Data:", JSON.parse(event.data));
+    });
+
+    evtSource.addEventListener("ping", function(event) {
+        console.log("Event: ping");
+        console.log("Data:", JSON.parse(event.data));
+    });
+
+    evtSource.addEventListener("error", function(event) {
+        if (event.target.readyState === EventSource.CLOSED) {
+            console.error("SSE Connection was closed.", event);
+        } else if (event.target.readyState === EventSource.CONNECTING) {
+            console.error("SSE Connection is reconnecting...", event);
+        } else {
+            // An error occurred while streaming, data might be available
+            console.error("SSE Error:", event);
+             if (event.data) {
+                try {
+                    console.error("Error Data:", JSON.parse(event.data));
+                } catch (e) {
+                    console.error("Error Data (raw):", event.data);
+                }
+            }
+        }
+    });
+    ```
+
+- **Example: Connecting with `curl`**:
+    ```bash
+    curl -N -H "Accept:text/event-stream" http://localhost:8000/events
+    ```
+    *(Note: `curl` will keep the connection open and print events as they arrive.)*
+
+
+## 💻 Editor & AI Tool Integration
+
+You can integrate the OpenEdu MCP Server with various AI-assisted coding tools and IDE plugins. This allows these tools to leverage the server's educational functionalities directly within your development environment. Configuration typically involves telling the editor how to start and communicate with the OpenEdu MCP server. The server is run using `python -m src.main` from the root of this project.
+
+Below are example configurations for some popular tools. You may need to adjust paths (e.g., for `cwd` or if you have a specific Python environment) based on your local setup.
+
+### Cursor
+
+To add this server to Cursor IDE:
+
+1.  Go to `Cursor Settings > MCP`.
+2.  Click `+ Add new Global MCP Server`.
+3.  Alternatively, add the following configuration to your global `.cursor/mcp.json` file (ensure `cwd` points to the root directory of this project):
+
+```json
+{
+  "mcpServers": {
+    "openedu-mcp-server": {
+      "command": "python",
+      "args": [
+        "-m",
+        "src.main"
+      ],
+      "cwd": "/path/to/your/openedu-mcp" // Replace with the actual path to this project's root
+    }
+  }
+}
+```
+See the Cursor documentation for more details.
+
+### Windsurf
+
+To set up MCP with Windsurf (formerly Cascade):
+
+1.  Navigate to `Windsurf - Settings > Advanced Settings` or use the Command Palette to `Open Windsurf Settings Page`.
+2.  Scroll down to the Cascade section and add the OpenEdu MCP server directly in `mcp_config.json` (ensure `cwd` points to the root directory of this project):
+
+```json
+{
+  "mcpServers": {
+    "openedu-mcp-server": {
+      "command": "python",
+      "args": [
+        "-m",
+        "src.main"
+      ],
+      "cwd": "/path/to/your/openedu-mcp" // Replace with the actual path to this project's root
+    }
+  }
+}
+```
+
+### Cline
+
+Add the following JSON manually to your `cline_mcp_settings.json` via Cline's MCP Server setting (ensure `cwd` points to the root directory of this project):
+
+```json
+{
+  "mcpServers": {
+    "openedu-mcp-server": {
+      "command": "python",
+      "args": [
+        "-m",
+        "src.main"
+      ],
+      "cwd": "/path/to/your/openedu-mcp" // Replace with the actual path to this project's root
+    }
+  }
+}
+```
+
+### Roo Code
+
+Access the MCP settings by clicking `Edit MCP Settings` in Roo Code settings or using the `Roo Code: Open MCP Config` command in VS Code's command palette (ensure `cwd` points to the root directory of this project):
+
+```json
+{
+  "mcpServers": {
+    "openedu-mcp-server": {
+      "command": "python",
+      "args": [
+        "-m",
+        "src.main"
+      ],
+      "cwd": "/path/to/your/openedu-mcp" // Replace with the actual path to this project's root
+    }
+  }
+}
+```
+
+### Claude
+
+Add the following to your `claude_desktop_config.json` file (ensure `cwd` points to the root directory of this project):
+
+```json
+{
+  "mcpServers": {
+    "openedu-mcp-server": {
+      "command": "python",
+      "args": [
+        "-m",
+        "src.main"
+      ],
+      "cwd": "/path/to/your/openedu-mcp" // Replace with the actual path to this project's root
+    }
+  }
+}
+```
+See the Claude Desktop documentation for more details if available.
 
 ## 📋 Educational Use Cases
 
