@@ -850,13 +850,12 @@ async def sse_event_generator(request: Request):
     except Exception as e:
         logger.error(f"Error in SSE event generator: {e}")
         # Yield an error event if possible, or just log and exit
-        try:
+        # Try to yield error event - if connection is closed, this will fail silently
+        with contextlib.suppress(ConnectionError, RuntimeError):
             yield {
                 "event": "error",
                 "data": json.dumps({"error": str(e)})
             }
-        except: # If yielding fails (e.g. connection already closed)
-            pass
     finally:
         logger.info("SSE event generator finished.")
 
