@@ -365,3 +365,5 @@ secrets/
 # Monitoring and metrics
 metrics/
 monitoring/
+
+validation_report_*.json
