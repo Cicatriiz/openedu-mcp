@@ -21,6 +21,11 @@ try:
 except NameError:
     # Define a fallback for Python 3.9
     async def anext_fallback(aiter):
+        """
+        Advances an asynchronous iterator and returns the next item.
+        
+        Equivalent to the built-in `anext` function introduced in Python 3.10.
+        """
         return await aiter.__anext__()
     anext = anext_fallback
 
@@ -170,6 +175,13 @@ class TestHttpViaToolEndpoint:
 class TestSseEndpoint:
     @pytest.mark.asyncio
     async def test_sse_stream_connect_and_ping_directly(self, initialized_services: None):
+        """
+        Tests that the SSE endpoint at /events streams 'connected' and 'ping' events as expected.
+        
+        Connects to the Server-Sent Events endpoint, verifies the response status and content type,
+        and asserts that both a 'connected' event with a success message and a 'ping' event with a
+        heartbeat message are received in the correct format. Skips the test if the ASGI app is not available.
+        """
         if not ASGI_APP:
             pytest.skip("ASGI app not found on MCP instance, skipping direct SSE test.")
 
