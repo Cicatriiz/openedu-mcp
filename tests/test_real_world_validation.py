@@ -226,7 +226,12 @@ class RealWorldValidator:
         return {"paper_id": paper_id, "has_abstract": 'summary' in details}
     
     async def test_arxiv_recent_papers(self) -> Dict[str, Any]:
-        """Test ArXiv recent papers functionality."""
+        """
+        Retrieves recent computer science papers from ArXiv within the last 30 days.
+        
+        Returns:
+            A dictionary indicating that the query was performed and the number of results found.
+        """
         recent = await self.arxiv_client.get_recent_papers("cs", days=30, max_results=3)
         if len(recent) == 0:
             print("WARNING: test_arxiv_recent_papers - arXiv API returned 0 results for date-filtered query. This may indicate an external issue.")
@@ -237,7 +242,14 @@ class RealWorldValidator:
         return {"recent_papers_queried": True, "results_found": len(recent)}
     
     async def test_arxiv_educational_features(self) -> Dict[str, Any]:
-        """Test ArXiv educational features."""
+        """
+        Validates the presence and structure of educational metadata in ArXiv search results.
+        
+        Performs a filtered search for academic papers related to mathematics education at the undergraduate level using the ArXiv tool. If papers are found, verifies that each contains educational metadata fields such as relevance score and academic level. Returns the number of papers found and extracted educational metadata, or default values if no papers are returned.
+         
+        Returns:
+            A dictionary containing the count of educational papers found, the educational relevance score, and the academic level from the first paper's metadata (or default values if none found).
+        """
         papers = await self.arxiv_tool.search_academic_papers(
             query="mathematics education",
             subject="Mathematics",
@@ -264,7 +276,12 @@ class RealWorldValidator:
         return details_to_return
     
     async def test_arxiv_research_trends(self) -> Dict[str, Any]:
-        """Test ArXiv research trends analysis."""
+        """
+        Analyzes recent research trends in Computer Science using the ArXiv API.
+        
+        Returns:
+            A dictionary containing the total number of papers analyzed and the count of educational insights generated over the past 14 days.
+        """
         trends = await self.arxiv_tool.analyze_research_trends(
             subject="Computer Science", days=14
         )
@@ -299,14 +316,24 @@ class RealWorldValidator:
         return {"title": summary.get('title', ''), "extract_length": len(summary.get('extract', ''))}
     
     async def test_wikipedia_article_content(self) -> Dict[str, Any]:
-        """Test Wikipedia full article content retrieval."""
+        """
+        Retrieves and validates the full content of the Wikipedia article on "Education".
+        
+        Returns:
+            A dictionary containing the article title and the length of its extract field.
+        """
         content = await self.wikipedia_client.get_article_content("Education")
         assert content is not None, "Failed to get article content"
         assert 'extract' in content, "Missing extract (source content)" # Changed 'source' to 'extract'
         return {"title": content.get('title', ''), "content_length": len(content.get('extract', ''))} # Changed 'source' to 'extract'
     
     async def test_wikipedia_featured_article(self) -> Dict[str, Any]:
-        """Test Wikipedia featured article retrieval."""
+        """
+        Retrieves the daily featured article from Wikipedia.
+        
+        Returns:
+            A dictionary containing the featured article's title and type. If no featured article is available or an error occurs, returns default values indicating the status.
+        """
         try:
             featured = await self.wikipedia_client.get_daily_featured()
             if featured:
@@ -318,7 +345,14 @@ class RealWorldValidator:
             return {"featured_title": "Error retrieving", "type": "error"}
     
     async def test_wikipedia_educational_features(self) -> Dict[str, Any]:
-        """Test Wikipedia educational features."""
+        """
+        Validates Wikipedia's educational article search and metadata extraction features.
+        
+        Searches for educational articles on "mathematics education" filtered by subject and grade level. If articles are found, creates an Article model from the first result and extracts its educational score and word count; otherwise, returns zero values for these metrics.
+        
+        Returns:
+            A dictionary containing the number of educational articles found, the educational score, and the word count of the first article (or zero if none found).
+        """
         articles = await self.wikipedia_tool.search_educational_articles(
             query="mathematics education",
             subject="Mathematics",
@@ -344,7 +378,12 @@ class RealWorldValidator:
         return details_to_return
     
     async def test_wikipedia_health_check(self) -> Dict[str, Any]:
-        """Test Wikipedia API health check."""
+        """
+        Checks the health status of the Wikipedia API.
+        
+        Returns:
+            A dictionary containing the health status information. Raises an assertion error if the API is not healthy.
+        """
         health = await self.wikipedia_client.health_check()
         assert health.get('status') == 'healthy', f"API unhealthy: {health}"
         return health
@@ -388,7 +427,14 @@ class RealWorldValidator:
         }
     
     async def test_dictionary_educational_features(self) -> Dict[str, Any]:
-        """Test dictionary educational features."""
+        """
+        Validates that the dictionary API provides educational metadata for a word definition.
+        
+        Retrieves the definition for "curriculum" at grade level 9-12 and checks for the presence of educational metadata, including difficulty level, educational relevance score, and available grade levels.
+        
+        Returns:
+            A dictionary containing the educational relevance score, complexity level, and the number of grade levels associated with the definition.
+        """
         definition_data = await self.dictionary_tool.get_word_definition(
             word="curriculum",
             grade_level="9-12"
@@ -410,7 +456,12 @@ class RealWorldValidator:
         }
     
     async def test_dictionary_vocabulary_analysis(self) -> Dict[str, Any]:
-        """Test dictionary vocabulary analysis."""
+        """
+        Performs a vocabulary analysis on the word "education" using the dictionary tool.
+        
+        Returns:
+            A dictionary containing the number of words analyzed and the average complexity score.
+        """
         analysis = await self.dictionary_tool.get_vocabulary_analysis(
             word="education", # Changed from words to word, using first word
             # grade_level="College" # Removed unexpected argument
@@ -472,7 +523,11 @@ class RealWorldValidator:
         return {"books_by_subject": len(books)}
     
     async def test_openlibrary_educational_features(self) -> Dict[str, Any]:
-        """Test OpenLibrary educational features."""
+        """
+        Validates the retrieval of educational book features from OpenLibrary.
+        
+        Searches for educational books on mathematics for grades 9-12 and, if results are found, extracts the reading level and educational relevance score from the first book. Returns the number of books found along with these educational metadata fields.
+        """
         books = await self.openlibrary_tool.search_educational_books(
             query="mathematics textbook",
             subject="Mathematics",
@@ -498,7 +553,12 @@ class RealWorldValidator:
         return details_to_return
     
     async def test_openlibrary_book_recommendations(self) -> Dict[str, Any]:
-        """Test OpenLibrary book recommendations."""
+        """
+        Retrieves and validates book recommendations from OpenLibrary for a given subject and grade level.
+        
+        Returns:
+            A dictionary containing the number of recommendations and the count of distinct subjects covered.
+        """
         recommendations = await self.openlibrary_tool.get_book_recommendations(
             subject="Science",
             grade_level="6-8",
@@ -518,7 +578,14 @@ class RealWorldValidator:
         return health
 # Cross-API Integration Tests
     async def test_cross_api_educational_workflow(self) -> Dict[str, Any]:
-        """Test educational workflow across multiple APIs."""
+        """
+        Performs an end-to-end educational workflow by querying multiple APIs for resources on a given topic.
+        
+        Executes a coordinated search for academic papers, Wikipedia articles, dictionary definitions, and books related to "mathematics education" across ArXiv, Wikipedia, Dictionary, and OpenLibrary APIs. Returns a summary of results found at each step and indicates workflow completion.
+        
+        Returns:
+            A dictionary with counts of papers, articles, and books found, a flag for definitions retrieved, and a workflow completion indicator.
+        """
         topic = "mathematics education"
         
         # 1. Search for research papers on the topic
@@ -574,7 +641,12 @@ class RealWorldValidator:
         }
     
     async def run_all_tests(self) -> ValidationReport:
-        """Run all validation tests and generate report."""
+        """
+        Runs the full suite of validation tests across all integrated APIs and generates a comprehensive validation report.
+        
+        Returns:
+            ValidationReport: Aggregated results, metrics, and health statuses from all executed tests.
+        """
         print("🚀 Starting Comprehensive Real-World API Validation")
         print("=" * 60)
         
