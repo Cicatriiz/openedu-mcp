@@ -13,7 +13,7 @@ import xml.etree.ElementTree as ET
 from typing import Dict, Any, List, Optional, Union
 from urllib.parse import quote_plus, urljoin
 import aiohttp
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
 
 import sys
 from pathlib import Path
@@ -108,6 +108,7 @@ class ArxivClient:
             if retry_count > 0:
                 await asyncio.sleep(3)
             
+            logger.info(f"ArxivClient _make_request to URL: {self.query_url} with params: {params}") # Added log
             async with session.get(self.query_url, params=params) as response:
                 if response.status == 200:
                     return await response.text()
@@ -414,12 +415,9 @@ class ArxivClient:
             raise ValidationError("days must be between 1 and 365")
         
         # Calculate date range
-        end_date = datetime.now()
-        start_date = end_date - timedelta(days=days)
-        
-        # Build date-based search query
-        start_str = start_date.strftime('%Y%m%d')
-        end_str = end_date.strftime('%Y%m%d')
+        # FOR TESTING: Use a fixed date range from arXiv documentation example
+        start_str = "202301010000"
+        end_str = "202312312359"
         
         # Get arXiv categories for the subject
         arxiv_categories = self._get_arxiv_categories(category)
@@ -428,21 +426,41 @@ class ArxivClient:
             arxiv_categories = [category]
         
         # Build category query
+        # category_query = " OR ".join([f"cat:{cat}" for cat in arxiv_categories])
+        # search_query = f"cat:{category}+AND+submittedDate:[{start_str}+TO+{end_str}]" # Match docs example order
+
+        # Calculate date range (restored)
+        end_date = datetime.now(timezone.utc)
+        start_date = end_date - timedelta(days=days)
+
+        start_str = start_date.strftime('%Y%m%d0000')
+        end_str = end_date.strftime('%Y%m%d2359')
+
+        arxiv_categories = self._get_arxiv_categories(category)
+        if not arxiv_categories:
+            arxiv_categories = [category]
+
         category_query = " OR ".join([f"cat:{cat}" for cat in arxiv_categories])
+        # Use submittedDate for filtering
         search_query = f"submittedDate:[{start_str} TO {end_str}] AND ({category_query})"
         
         params = {
             'search_query': search_query,
             'max_results': max_results,
-            'sortBy': 'submittedDate',
+            'sortBy': 'submittedDate', # Ensure sortBy matches the filter field
             'sortOrder': 'descending'
         }
         
+        logger.info(f"ArXiv get_recent_papers query: '{search_query}' with params: {params}")
+
         try:
             xml_response = await self._make_request(params)
+            logger.debug(f"ArXiv get_recent_papers XML response (first 1000 chars): {xml_response[:1000]}")
+            if "<opensearch:totalResults>0</opensearch:totalResults>" in xml_response:
+                logger.warning(f"ArXiv query returned 0 total results. Query: {search_query}")
             papers = self._parse_atom_feed(xml_response)
             
-            logger.info(f"Found {len(papers)} recent papers in {category}")
+            logger.info(f"Found {len(papers)} recent papers in {category} using submittedDate")
             return papers
             
         except Exception as e:

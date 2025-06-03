@@ -33,8 +33,8 @@ A comprehensive Model Context Protocol (MCP) server designed to provide educatio
 
 1. **Clone the repository:**
 ```bash
-git clone https://github.com/your-username/opened-mcp.git
-cd opened-mcp
+git clone https://github.com/Cicatriiz/openedu-mcp.git
+cd openedu-mcp
 ```
 
 2. **Install dependencies:**
@@ -55,7 +55,7 @@ python -m src.main
 
 5. **Test the installation:**
 ```bash
-python -m src.main
+   python run_validation_tests.py
 ```
 
 ### Development Setup
