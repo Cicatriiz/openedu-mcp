@@ -22,7 +22,7 @@ from config import Config
 from services.cache_service import CacheService
 from services.rate_limiting_service import RateLimitingService
 from services.usage_service import UsageService
-from exceptions import ToolError, ValidationError, APIError
+from exceptions import ToolError, ValidationError, APIError, CacheError
 
 logger = logging.getLogger(__name__)
 
@@ -837,7 +837,11 @@ class ArxivTool(BaseTool):
             api_health = await self.client.health_check()
             
             # Check cache service
-            cache_healthy = await self.cache_service.health_check()
+            try:
+                cache_healthy = await self.cache_service.health_check()
+            except CacheError as e:
+                logger.error(f"Cache health check failed: {e}")
+                cache_healthy = False
             
             # Check rate limiting
             rate_limit_status = await self.rate_limiting_service.get_rate_limit_status(self.api_name)
