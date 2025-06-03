@@ -14,6 +14,21 @@ import pytest
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
+# Fallback for anext (Python 3.10+)
+try:
+    # Check if anext is already available (Python 3.10+)
+    anext
+except NameError:
+    # Define a fallback for Python 3.9
+    async def anext_fallback(aiter):
+        """
+        Advances an asynchronous iterator and returns the next item.
+        
+        Equivalent to the built-in `anext` function introduced in Python 3.10.
+        """
+        return await aiter.__anext__()
+    anext = anext_fallback
+
 from main import (
     mcp,  # The FastMCP instance
     initialize_services,
@@ -160,6 +175,13 @@ class TestHttpViaToolEndpoint:
 class TestSseEndpoint:
     @pytest.mark.asyncio
     async def test_sse_stream_connect_and_ping_directly(self, initialized_services: None):
+        """
+        Tests that the SSE endpoint at /events streams 'connected' and 'ping' events as expected.
+        
+        Connects to the Server-Sent Events endpoint, verifies the response status and content type,
+        and asserts that both a 'connected' event with a success message and a 'ping' event with a
+        heartbeat message are received in the correct format. Skips the test if the ASGI app is not available.
+        """
         if not ASGI_APP:
             pytest.skip("ASGI app not found on MCP instance, skipping direct SSE test.")
 
@@ -177,7 +199,7 @@ class TestSseEndpoint:
                     if line.startswith("event: connected"):
                         events_received += 1
                         # Next line should be data for connected
-                        data_line = await response.aiter_lines().__anext__()
+                        data_line = await anext(response.aiter_lines())
                         # print(f"SSE Connected Data: {data_line}") # For debugging
                         assert data_line.startswith("data: ")
                         payload = json.loads(data_line[len("data: "):])
@@ -186,7 +208,7 @@ class TestSseEndpoint:
                     elif line.startswith("event: ping"):
                         events_received += 1
                         # Next line should be data for ping
-                        data_line = await response.aiter_lines().__anext__()
+                        data_line = await anext(response.aiter_lines())
                         # print(f"SSE Ping Data: {data_line}") # For debugging
                         assert data_line.startswith("data: ")
                         payload = json.loads(data_line[len("data: "):])
